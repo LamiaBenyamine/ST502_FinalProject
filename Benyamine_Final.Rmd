@@ -1,0 +1,277 @@
+---
+title: 'ST502: Final Project'
+author: "Lamia Benyamine"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+## Introduction to McNemar's test
+
+Introduce the general idea of McNemar’s test and where it is used in an introduction (10 points)
+
+McNemar’s test is a statistical test for dependent (paired) categorical data. McNemar’s is best used for data with matched pairs, for example, comparing pre-treatment with post-treatment
+
+## Analyzing the Dataset
+
+To test a restricted multinomial vs a free multinomial, we have:
+
+-   *H*~0~: No relationship between drug and relief, or, $π_{1•} = π_{•1}$ and $π_{2•} = π_{•2}$ equivalent to $π_{12} = π_{21}$
+
+    H~A~: cell probabilities are ’free’ (other than the sum to 1 constraint) $$ \sum_{i=1}^I \sum_{j=1}^Jπ_{ij} = 1  $$
+
+-   Our test statistic is given as Pearson's Chi-Square test statistic
+
+    $$
+     \chi^2 = {(n_{12} - n_{21})^2 \over n_{12} + n_{21}}$$ and a reference distribution of $\chi^2$.
+
+-   For the Rejection region and p-value, we use R and assume α = 0.05.
+
+```{r}
+cuttoff <- qchisq(0.95, df = 1)
+LRT <- 2*sum(15*log(15/40))
+```
+
+-   So the RR = { \> `r toString(cuttoff)`} and p-value = P( $\chi^2$ RV $\geq$ `r toString(LRT)`)
+
+Create the data matrix and run McNemar’s test to determine if we have evidence that the reflux drugs have different probabilities of relief.
+
+```{r}
+reflux_data <- matrix(c(85,15, 40,110), nrow = 2, ncol = 2, byrow = TRUE,
+               dimnames = list(c("A-Success", "A-Failure"),
+                               c("B-Success", "B-Failure")))
+reflux_data
+
+r <- mcnemar.test(reflux_data, correct = FALSE)
+```
+
+Based on the McNemar's output, the p-value is low, so we reject the null in favor of the alternative. We conclude that there is sufficient evidence of an association between drug type and reflux relief.
+
+## Derive Parts of the Test
+
+1.  Show this is true $π_{1•} = π_{•1}$ and $π_{2•} = π_{•2}$ equivalent to $π_{12} = π_{21}$
+
+<div>
+
+> > $π_{1•}$ is the sum of all the probabilities in row 1. So $π_{1•} = π_{11} + π_{12}$ and similarly $π_{2•} = π_{21} + π_{22}$
+> >
+> > $π_{•1}$ is the sum of all the probabilities in column 1. So $π_{•1} = π_{11} + π_{21}$ and similarly $π_{•2} = π_{12} + π_{22}$
+> >
+> > Given, $π_{1•} = π_{•1}$ and $π_{2•} = π_{•2}$, we substitute and get:
+> >
+> > $$π_{11} + π_{12} = π_{11} + π_{21}   (1) $$ $$π_{21} + π_{22} = π_{12} + π_{22}    (2)$$
+> >
+> > To simplify we subtract $π_{11}$ from both sides in (1), and subtract $π_{22}$ from both sides in (2).
+> >
+> > $$π_{12} = π_{21} (1) $$ $$π_{21} = π_{12} (2) $$
+> >
+> > Therefore the statement in the null hypothesis is proven true.
+
+</div>
+
+2.  Second, under this null restriction on our multinomial, derive the maximum’s for $π_{11}, π_{12},π_{21},$ and $π_{22}$. This can be done using Lagrange multipliers or by substituting in carefully to include the restriction. No need to show your resulting critical values are maximums.
+
+<div>
+
+> > Starting with our general likelihood $$L(π_{11}, π_{12}, ..., π_{IJ}) \propto π_{11}^{n_{11}} π_{12}^{n_{12}} ... π_{IJ}^{n_{IJ}} $$ The log-likelihood is then $$l(π_{11}, π_{12}, ..., π_{IJ}) = c + n_{11}ln(π_{11}) + ... + n_{IJ}ln(π_{IJ}) $$
+
+</div>
+
+3.  Third, although we derived the form of the LRT generally for a restricted vs free multinomial, I’d like you to do this for this specific problem. You should show that −2ln  L( ˜π11, π˜12, π˜21, π˜22) / L( ˆπ11, πˆ12, πˆ21, πˆ22)  = 2X 2 i=1 X 2 j=1 Obsij ln  Obsij Expij 
+
+and then argue that the appropriate reference distribution has 1 degree of freedom. You don’t need to derive the overal maximums for our πij values. You can just use the usual MLE result as we did in class.
+
+<div>
+
+</div>
+
+4.  Lastly, we know we can use Pearson’s chi-square test statistic instead of this LRT and they are asymptotically equivalent. In our above data example, we used
+
+Show that Pearson’s chi-square test statistic can be simplified into the form on the right.
+
+<div>
+
+</div>
+
+## Simulation Study
+
+Using simulation based methods is an easier way to find approximate results for the power of a test. We’ll investigate the α of the Pearson chi-square test and its power
+
+### *McNemar's Function*
+
+Create a function to conduct McNemar's test and return True if there is enough evidence to reject $H_0$ and False otherwise.
+
+> > Kept getting this error *'Correlations are beyond their upper limits imposed by expectations*', so I added a condition to check the correlation and adjust it if it is higher than the maximum allowed correlation.
+
+```{r, warning = FALSE, message = FALSE}
+library(MultiRNG)
+mcnemar_func <- function(n, p, pi1, pi2){
+  
+  #check if correlation is within range, if not, sub in max correlation value
+  max_p <- sqrt(pi1 * (1 - pi1) * pi2 * (1 - pi2))
+  if (abs(p) > max_p) {
+    p <- max_p}
+    
+  #store parameter values in a vector/matrix
+  propvec <- c(pi1, pi2)
+  cmat <- matrix(c(1, p, p, 1), nrow=2, ncol=2)
+  
+  #generate correlated binary data
+  bin_data <- draw.correlated.binary(no.row = n, d = 2, prop.vec = propvec, corr.mat = cmat)
+
+  #use a contingency table to find observed counts
+  obs_count <- table(bin_data[,1], bin_data[,2])
+  
+  #check if there is a row for each scenario, if not create one with value 0
+  row <-rownames(obs_count)
+  col <- colnames(obs_count)
+  n_12 <- ifelse("0" %in% row && "1" %in% col, obs_count["0", "1"], 0)
+  n_21 <- ifelse("1" %in% row && "0" %in% col, obs_count["1", "0"], 0)
+  
+  #return FALSE if there are no discordant pairs (to avoid NAs)
+  if (n_12 == 0 && n_21 == 0) {
+    return(FALSE)} 
+  
+  #use Pearson's Chi-square test stat
+  xobs <- ((n_12 - n_21)^2)/(n_12 + n_21)
+
+  #determine the cut off value of failing to reject null hypothesis
+  cutoff <- qchisq(0.95, df = 1)
+
+  #return True for Reject H0 and False for Failing to Reject H0
+  return(xobs > cutoff)
+}
+```
+
+### *Generate combinations of data*
+
+-   We’ll generate data under all combinations of the following:
+
+```{r}
+n_val <- c(25, 40, 80, 200) #sample size
+pi1_val <- c(0.1, 0.4, 0.8) #‘drug A’ variable’s success probability
+pi2_val <- c(pi1_val, pi1_val + 0.02, pi1_val + 0.05, pi1_val + 0.1) #‘drug B’ variable’s success probability
+p_val <- c(0, 0.2, 0.5) #this is the correlation with which we generate our data
+```
+
+-   Create a function to generate the data for all combinations of the parameters
+
+```{r}
+get_data <- function(n_val, p_val, pi1_val, pi2_val, N = 100) { 
+  #set the seed for the random num generation with replicate
+  set.seed(25)
+  #initialize a list to store data
+  gen_data <- list()  
+  
+  #generate data by looping through all combinations
+  for (n in n_val) {
+    for (p in p_val) {
+      for (pi1 in pi1_val) {
+        for (pi2 in pi2_val) {
+          #create column names for each combination
+          col_name <- paste0("n", n, "_corr", p, "_pi1", pi1, "_pi2", pi2)  
+          #replicate the test and store data in the list
+          gen_data[[col_name]] <- replicate(N, {mcnemar_func(n = n, p = p, pi1 = pi1, pi2 = pi2)})
+        }
+      }
+    }
+  }
+  return(gen_data)
+}
+```
+
+### *Replicate the data*
+
+We’ll generate N = 1000 datasets under each of these settings. We’ll be able to determine α control by looking at the case when $π_1 = π_2$. All of the other cases will allow us to investigate power under the alternative created by the difference in π’s and correlation.
+
+```{r}
+samples <- get_data(n_val = n_val, p_val = p_val, pi1_val = pi1_val, pi2_val = pi2_val, N = 1000)
+```
+
+### *Find Power*
+
+Find the probability of rejecting $H_0$ for each simulated combination.
+
+```{r}
+#apply the mean to each list to get the power
+power <- lapply(X = samples, FUN = mean)
+
+#create a data frame to better visualize the data
+power_df <- data.frame(
+    Combination = names(samples),
+    Power = unlist(power) #simplify values to a vector
+  )
+  
+#split the combination column into a vector with 4 values for each parameter
+split_combos <- strsplit(x = as.character(power_df$Combination), split = "_")
+
+#extract each parameter value and assign it to a new column & remove characters from the values
+power_df$n <- sapply(split_combos, function(x) x[1])
+power_df$n <- sub("n", "", power_df$n)
+
+power_df$Correlation <- sapply(split_combos, function(x) x[2])
+power_df$Correlation <- sub("corr", "", power_df$Correlation)
+
+power_df$pi1 <- sapply(split_combos, function(x) x[3])
+power_df$pi1 <- sub("pi1", "", power_df$pi1)
+
+power_df$pi2 <- sapply(split_combos, function(x) x[4])
+power_df$pi2 <- sub("pi2", "", power_df$pi2)
+
+#remove row names for a cleaner table since values are already available in Combination column
+row.names(power_df) <- NULL
+
+#set data structure of columns
+power_df$pi1 <- as.numeric(power_df$pi1)
+power_df$pi2 <- as.numeric(power_df$pi2)
+power_df$Correlation <- as.factor(power_df$Correlation) 
+power_df$n <- as.numeric(power_df$n)
+power_df <- as_tibble(power_df)
+
+#create a new column pi2-pi1 to use when creating plots
+power_df$pi2_pi1 <- (power_df$pi2 - power_df$pi1)
+```
+
+### *Plots*
+
+Read in packages to create better visualizations than with base R.
+
+```{r, warning = FALSE, message = FALS}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+```
+
+Create Power Plots for each instance of $π_1$ to determine how well the asymptotic rejection region performs at controlling α and the power of the asymptotic test when comparing certain alternatives.
+
+```{r}
+#pi=0.1
+power_df|>
+  filter(power_df$pi1 == 0.1) |>
+  ggplot(aes(x = pi2_pi1, y = Power, group = Correlation, color = Correlation)) +
+  geom_line() + 
+  labs(title = "Power plot for different sample sizes with pi1 = 0.1", x = "pi2-pi1", y = "Proportion Rejected") +
+  facet_grid(cols = vars(n)) +
+  theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
+
+#pi=0.4
+power_df|>
+  filter(power_df$pi1 == 0.4) |>
+  ggplot(aes(x = pi2_pi1, y = Power, group = Correlation, color = Correlation)) +
+  geom_line() + 
+  labs(title = "Power plot for different sample sizes with pi1 = 0.4", x = "pi2-pi1", y = "Proportion Rejected") +
+  facet_grid(cols = vars(n)) +
+  theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
+
+#pi=0.8
+power_df|>
+  filter(power_df$pi1 == 0.8) |>
+  ggplot(aes(x = pi2_pi1, y = Power, group = Correlation, color = Correlation)) +
+  geom_line() + 
+  labs(title = "Power plot for different sample sizes with pi1 = 0.8", x = "pi2-pi1", y = "Proportion Rejected") +
+  facet_grid(cols = vars(n)) +
+  theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
+```
+
+### *Results*
+
+In all values of $π_1$ where $π_1 = π_2$, the proportion of tests rejecting $H_0$ was the closest to 0. As the $|π_2 - π_1|$ increases, the proportion of tests rejected also increases. The various correlation values acted very similarly, and as the sample sizes increases, the proportion of tests rejected reached high values sooner.
