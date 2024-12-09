@@ -7,8 +7,6 @@ output: pdf_document
 
 ## Introduction to McNemar's test
 
-Introduce the general idea of McNemar’s test and where it is used in an introduction (10 points)
-
 McNemar’s test is a statistical test for dependent (paired) categorical data. McNemar’s is best used for data with matched pairs, for example, comparing pre-treatment with post-treatment
 
 ## Analyzing the Dataset
@@ -68,17 +66,46 @@ Based on the McNemar's output, the p-value is low, so we reject the null in favo
 
 </div>
 
-2.  Second, under this null restriction on our multinomial, derive the maximum’s for $π_{11}, π_{12},π_{21},$ and $π_{22}$. This can be done using Lagrange multipliers or by substituting in carefully to include the restriction. No need to show your resulting critical values are maximums.
+2.  Second, under this null restriction on our multinomial, derive the maximum’s for $π_{11}, π_{12},π_{21},$ and $π_{22}$. This can be done using Lagrange multipliers or by substituting in carefully to include the restriction.
 
 <div>
 
-> > Starting with our general likelihood $$L(π_{11}, π_{12}, ..., π_{IJ}) \propto π_{11}^{n_{11}} π_{12}^{n_{12}} ... π_{IJ}^{n_{IJ}} $$ The log-likelihood is then $$l(π_{11}, π_{12}, ..., π_{IJ}) = c + n_{11}ln(π_{11}) + ... + n_{IJ}ln(π_{IJ}) $$
+> > Starting with our general likelihood $$L(π_{11}, π_{12}, π_{21}, π_{22}) \propto c \prod_{i=1}^I \prod_{j=1}^Jπ_{ij}^{n_{ij}}$$ The log-likelihood is then $$l(π_{11}, π_{12}, π_{21}, π_{22}) = c + n_{11}ln(π_{11}) + n_{12}ln(π_{12}) + n_{21}ln(π_{21}) + n_{22}ln(π_{22})$$
+> >
+> > Using Lagrange Multipliers, derive the maximums subject to the sum to 1 constraints. Since the constraints can be rewritten as $\sum_{i=1}^2 π_{i•}-1 = 0$ and $\sum_{j=1}^2 π_{•j}-1 =0$ , we add these constraints into our log-likelihood with Lagrange multipliers. $$ l(π_{11}, π_{12}, π_{21}, π_{22}) = c + n_{11}ln(π_{11}) + (n_{12})ln(π_{12}) + + n_{21}ln(π_{21}) +n_{22}ln(π_{22}) + \lambda(\sum_{i=1}^2 \sum_{j=1}^2 π_{ij}-1)
+> > $$
+> >
+> > We get the partial derivatives for all variables, set to 0, and solve. $$ \frac{\partial l}{\partial π_{11}} = \frac{n_{11}}{π_{11}} + \lambda \equiv 0 \Leftrightarrow π_{11} = -\frac{n_{11}}{\lambda}$$ (1)
+> >
+> > $$ \frac{\partial l}{\partial π_{12}} = \frac{n_{12}}{π_{12}} + \lambda \equiv 0 \Leftrightarrow π_{12} = -\frac{n_{12}}{\lambda} $$ (2)
+> >
+> > $$ \frac{\partial l}{\partial π_{21}} = \frac{n_{21}}{π_{21}} + \lambda \equiv 0 \Leftrightarrow π_{21} = -\frac{n_{21}}{\lambda}$$ (3)
+> >
+> > $$ \frac{\partial l}{\partial π_{22}} = \frac{n_{22}}{π_{22}} + \lambda \equiv 0 \Leftrightarrow π_{22} = -\frac{n_{22}}{\lambda}$$ (4)
+> >
+> > Use the sum to 1 constraint to solve for $\lambda$.
+> >
+> > $$ π_{11} + π_{12} + π_{21} + π_{22} = 1 \Leftrightarrow  -\frac{n_{11}}{\lambda} -\frac{n_{12}}{\lambda} -\frac{n_{21}}{\lambda} -\frac{n_{22}}{\lambda} = 1$$
+> >
+> > $$
+> > \Rightarrow \lambda = -(n_{11}+n_{12}+n_{21}+n_{22}) = - n
+> > $$
+> >
+> > Substituting $\lambda$ in equations 1-4 above, we get the below critical values.
+> >
+> > $π_{11} = \frac{n_{11}}{n}$ (1)
+> >
+> > $π_{12} = \frac{n_{12}}{n}$ (2)
+> >
+> > $π_{21} = \frac{n_{21}}{n}$ (3)
+> >
+> > $π_{22} = \frac{n_{22}}{n}$ (4)
 
 </div>
 
 3.  Third, although we derived the form of the LRT generally for a restricted vs free multinomial, I’d like you to do this for this specific problem. You should show that −2ln  L( ˜π11, π˜12, π˜21, π˜22) / L( ˆπ11, πˆ12, πˆ21, πˆ22)  = 2X 2 i=1 X 2 j=1 Obsij ln  Obsij Expij 
 
-and then argue that the appropriate reference distribution has 1 degree of freedom. You don’t need to derive the overal maximums for our πij values. You can just use the usual MLE result as we did in class.
+and then argue that the appropriate reference distribution has 1 degree of freedom. You don’t need to derive the overall maximums for our πij values. You can just use the usual MLE result as we did in class.
 
 <div>
 
