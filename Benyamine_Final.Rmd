@@ -7,109 +7,110 @@ output: pdf_document
 
 ## Introduction to McNemar's test
 
-McNemar’s test is a statistical test for dependent (paired) categorical data. McNemar’s is best used for data with matched pairs, for example, comparing pre-treatment with post-treatment
+McNemar’s test is a statistical test for dependent (paired) categorical data. McNemar’s is best used for data with matched pairs, for example, comparing pre-treatment with post-treatment.
 
 ## Analyzing the Dataset
 
 To test a restricted multinomial vs a free multinomial, we have:
 
--   *H*~0~: No relationship between drug and relief, or, $π_{1•} = π_{•1}$ and $π_{2•} = π_{•2}$ equivalent to $π_{12} = π_{21}$
+-   $H_0$: No relationship between drug and relief, or, $\pi_{1\bullet} = \pi_{\bullet1}$ and $\pi_{2\bullet} = \pi_{\bullet2}$ equivalent to $\pi_{12} = \pi_{21}$
 
-    H~A~: cell probabilities are ’free’ (other than the sum to 1 constraint) $$ \sum_{i=1}^I \sum_{j=1}^Jπ_{ij} = 1  $$
+    $H_A$: cell probabilities are ’free’ (other than the sum to 1 constraint) $$ \sum_{i=1}^I \sum_{j=1}^J\pi_{ij} = 1  $$
 
 -   Our test statistic is given as Pearson's Chi-Square test statistic
 
     $$
-     \chi^2 = {(n_{12} - n_{21})^2 \over n_{12} + n_{21}}$$ and a reference distribution of $\chi^2$.
+     \chi^2 = \frac{(n_{12} - n_{21})^2}{n_{12} + n_{21}}$$ and a reference distribution of $\chi^2$.
 
--   For the Rejection region and p-value, we use R and assume α = 0.05.
+-   For the Rejection region and p-value, we use R and assume $\alpha$ = 0.05.
 
 ```{r}
 cuttoff <- qchisq(0.95, df = 1)
 LRT <- 2*sum(15*log(15/40))
 ```
 
--   So the RR = { \> `r toString(cuttoff)`} and p-value = P( $\chi^2$ RV $\geq$ `r toString(LRT)`)
+-   So the RR = { xobs \> `r toString(cuttoff)`} and p-value = P( $\chi^2$ RV $\geq$ `r toString(LRT)`)
 
 Create the data matrix and run McNemar’s test to determine if we have evidence that the reflux drugs have different probabilities of relief.
 
-```{r}
+```{r analyze}
 reflux_data <- matrix(c(85,15, 40,110), nrow = 2, ncol = 2, byrow = TRUE,
                dimnames = list(c("A-Success", "A-Failure"),
                                c("B-Success", "B-Failure")))
 reflux_data
-
-r <- mcnemar.test(reflux_data, correct = FALSE)
+#run the test for the given data
+robs <-mcnemar.test(reflux_data, correct = FALSE)
+robs
 ```
 
-Based on the McNemar's output, the p-value is low, so we reject the null in favor of the alternative. We conclude that there is sufficient evidence of an association between drug type and reflux relief.
+Based on the McNemar's output, the p-value is low and `r toString(robs$statistic)` \> `r toString(cuttoff)`, so we reject the null in favor of the alternative. We conclude that there is sufficient evidence of an association between drug type and reflux relief.
 
 ## Derive Parts of the Test
 
-1.  Show this is true $π_{1•} = π_{•1}$ and $π_{2•} = π_{•2}$ equivalent to $π_{12} = π_{21}$
+1.  Show this is true $\pi_{1\bullet} = \pi_{\bullet1}$ and $\pi_{2\bullet} = \pi_{\bullet2}$ equivalent to $\pi_{12} = \pi_{21}$
 
     <div>
 
-    > $π_{1•}$ is the sum of all the probabilities in row 1. So $π_{1•} = π_{11} + π_{12}$ and similarly $π_{2•} = π_{21} + π_{22}$
+    > $\pi_{1\bullet}$ is the sum of all the probabilities in row 1. So $\pi_{1\bullet} = \pi_{11} + \pi_{12}$ and similarly $\pi_{2\bullet} = \pi_{21} + \pi_{22}$
     >
-    > $π_{•1}$ is the sum of all the probabilities in column 1. So $π_{•1} = π_{11} + π_{21}$ and similarly $π_{•2} = π_{12} + π_{22}$
+    > $\pi_{\bullet1}$ is the sum of all the probabilities in column 1. So $\pi_{\bullet1} = \pi_{11} + \pi_{21}$ and similarly $\pi_{\bullet2} = \pi_{12} + \pi_{22}$
     >
-    > Given, $π_{1•} = π_{•1}$ and $π_{2•} = π_{•2}$, we substitute and get:
+    > Given, $\pi_{1\bullet} = \pi_{\bullet1}$ and $\pi_{2\bullet} = \pi_{\bullet2}$, we substitute and get:
     >
-    > $$π_{11} + π_{12} = π_{11} + π_{21}   (1) $$ $$π_{21} + π_{22} = π_{12} + π_{22}    (2)$$
+    > $$\pi_{11} + \pi_{12} = \pi_{11} + \pi_{21}   (1) $$ $$\pi_{21} + \pi_{22} = \pi_{12} + \pi_{22}    (2)$$
     >
-    > To simplify we subtract $π_{11}$ from both sides in (1), and subtract $π_{22}$ from both sides in (2).
+    > To simplify we subtract $\pi_{11}$ from both sides in (1), and subtract $\pi_{22}$ from both sides in (2).
     >
-    > $$π_{12} = π_{21} (1) $$ $$π_{21} = π_{12} (2) $$
+    > $$\pi_{12} = \pi_{21} (1) $$ $$\pi_{21} = \pi_{12} (2) $$
     >
     > Therefore the statement in the null hypothesis is proven true.
 
     </div>
 
-2.  Second, under this null restriction on our multinomial, derive the maximum’s for $π_{11}, π_{12},π_{21},$ and $π_{22}$. This can be done using Lagrange multipliers or by substituting in carefully to include the restriction.
+2.  Second, under this null restriction on our multinomial, derive the maximum’s for $\pi_{11}, \pi_{12},\pi_{21},$ and $\pi_{22}$. This can be done using Lagrange multipliers or by substituting in carefully to include the restriction.
 
     <div>
 
     Starting with our general likelihood
 
-    > $$L(π_{11}, π_{12}, π_{21}, π_{22}) \propto c \prod_{i=1}^I \prod_{j=1}^Jπ_{ij}^{n_{ij}}$$ The log-likelihood is then $$l(π_{11}, π_{12}, π_{21}, π_{22}) = c + n_{11}ln(π_{11}) + n_{12}ln(π_{12}) + n_{21}ln(π_{21}) + n_{22}ln(π_{22})$$
+    > $$L(\pi_{11}, \pi_{12}, \pi_{21}, \pi_{22}) \propto c \prod_{i=1}^I \prod_{j=1}^J\pi_{ij}^{n_{ij}}$$ The log-likelihood is then $$l(\pi_{11}, \pi_{12}, \pi_{21}, \pi_{22}) = c + n_{11}ln(\pi_{11}) + n_{12}ln(\pi_{12}) + n_{21}ln(\pi_{21}) + n_{22}ln(\pi_{22})$$
 
-    Using Lagrange Multipliers, derive the maximums subject to the sum to 1 constraints. Since the constraints can be rewritten as $\sum_{i=1}^2 π_{i•}-1 = 0$ and $\sum_{j=1}^2 π_{•j}-1 =0$ , we add these constraints into our log-likelihood with Lagrange multipliers.
+    Using Lagrange Multipliers, derive the maximums subject to the sum to 1 constraints. Since the constraints can be rewritten as $\sum_{i=1}^2 \pi_{i\bullet}-1 = 0$ and $\sum_{j=1}^2 \pi_{\bullet j}-1 =0$ , we add these constraints into our log-likelihood with Lagrange multipliers.
 
-    > $$ l(π_{11}, π_{12}, π_{21}, π_{22}) = c + n_{11}ln(π_{11}) + (n_{12})ln(π_{12}) + + n_{21}ln(π_{21}) +n_{22}ln(π_{22}) + \lambda(\sum_{i=1}^2 \sum_{j=1}^2 π_{ij}-1)
+    > $$ l(\pi_{11}, \pi_{12}, \pi_{21}, \pi_{22}) = c + n_{11}ln(\pi_{11}) + (n_{12})ln(\pi_{12}) + + n_{21}ln(\pi_{21}) +n_{22}ln(\pi_{22}) + \lambda(\sum_{i=1}^2 \sum_{j=1}^2 \pi_{ij}-1)
     > $$
 
     We get the partial derivatives for all variables, set to 0, and solve.
 
-    > $\frac{\partial l}{\partial π_{11}} = \frac{n_{11}}{π_{11}} + \lambda \equiv 0 \Leftrightarrow π_{11} = -\frac{n_{11}}{\lambda}$ (1)
+    > $\frac{\partial l}{\partial \pi_{11}} = \frac{n_{11}}{\pi_{11}} + \lambda \equiv 0 \Leftrightarrow \pi_{11} = -\frac{n_{11}}{\lambda}$ (1)
     >
-    > $\frac{\partial l}{\partial π_{12}} = \frac{n_{12}}{π_{12}} + \lambda \equiv 0 \Leftrightarrow π_{12} = -\frac{n_{12}}{\lambda}$ (2)
+    > $\frac{\partial l}{\partial \pi_{12}} = \frac{n_{12}}{\pi_{12}} + \lambda \equiv 0 \Leftrightarrow \pi_{12} = -\frac{n_{12}}{\lambda}$ (2)
     >
-    > $\frac{\partial l}{\partial π_{21}} = \frac{n_{21}}{π_{21}} + \lambda \equiv 0 \Leftrightarrow π_{21} = -\frac{n_{21}}{\lambda}$ (3)
+    > $\frac{\partial l}{\partial \pi_{21}} = \frac{n_{21}}{\pi_{21}} + \lambda \equiv 0 \Leftrightarrow \pi_{21} = -\frac{n_{21}}{\lambda}$ (3)
     >
-    > $\frac{\partial l}{\partial π_{22}} = \frac{n_{22}}{π_{22}} + \lambda \equiv 0 \Leftrightarrow π_{22} = -\frac{n_{22}}{\lambda}$ (4)
+    > $\frac{\partial l}{\partial \pi_{22}} = \frac{n_{22}}{\pi_{22}} + \lambda \equiv 0 \Leftrightarrow \pi_{22} = -\frac{n_{22}}{\lambda}$ (4)
 
     Use the sum to 1 constraint to solve for $\lambda$.
 
-    > $$ π_{11} + π_{12} + π_{21} + π_{22} = 1 \Leftrightarrow  -\frac{n_{11}}{\lambda} -\frac{n_{12}}{\lambda} -\frac{n_{21}}{\lambda} -\frac{n_{22}}{\lambda} = 1$$ $$
+    > $$ \pi_{11} + \pi_{12} + \pi_{21} + \pi_{22} = 1 \Leftrightarrow  -\frac{n_{11}}{\lambda} -\frac{n_{12}}{\lambda} -\frac{n_{21}}{\lambda} -\frac{n_{22}}{\lambda} = 1$$ $$
     > \Rightarrow \lambda = -(n_{11}+n_{12}+n_{21}+n_{22}) = - n
     > $$
 
     Substituting $\lambda$ in equations 1-4 above, we get the below critical values.
 
-    > $π_{11} = \frac{n_{11}}{n}$ (1)
+    > $\pi_{11} = \frac{n_{11}}{n}$ (1)
     >
-    > $π_{12} = \frac{n_{12}}{n}$ (2)
+    > $\pi_{12} = \frac{n_{12}}{n}$ (2)
     >
-    > $π_{21} = \frac{n_{21}}{n}$ (3)
+    > $\pi_{21} = \frac{n_{21}}{n}$ (3)
     >
-    > $π_{22} = \frac{n_{22}}{n}$ (4)
+    > $\pi_{22} = \frac{n_{22}}{n}$ (4)
 
     </div>
 
 3.  Derive the form of the LRT for a restricted vs free multinomial for this specific problem. Show that
 
-    $$−2ln \left( \frac{L(π_{11}^\sim, π_{12}^\sim, π_{21}^\sim, π_{22}^\sim)}{L(π_{11}^‸, π_{12}^‸, π_{21}^‸, π_{22}^‸)} \right) = 2\sum_{i=1}^2 \sum_{j=1}^2 Obs_{ij} ln \left( \frac{Obs_{ij}} {Exp_{ij}} \right) $$
+    $$-2ln \left( \frac{L(\pi_{11}^\sim, \pi_{12}^\sim, \pi_{21}^\sim, \pi_{22}^\sim)}{L(\pi_{11}^\wedge, \pi_{12}^\wedge, \pi_{21}^\wedge, \pi_{22}^\wedge)} \right) = 2\sum_{i=1}^2 \sum_{j=1}^2 Obs_{ij} ln \left( \frac{Obs_{ij}} {Exp_{ij}} \right) $$
 
     and then argue that the appropriate reference distribution has 1 degree of freedom.
 
@@ -117,18 +118,18 @@ Based on the McNemar's output, the p-value is low, so we reject the null in favo
 
     We know our likelihood is a multinomial
 
-    Max over $\omega_0$ : we know $π_{ij}^‸ = \frac{n_{ij}}{n}$ from above.
+    Max over $\omega_0$ : we know $\pi_{ij}^\wedge = \frac{n_{ij}}{n}$ from above.
 
-    Max over $\Omega$ : $(π_{ij}^‸)_\sim = {\frac{n_{i•} * n_{•j}}{n}}$
+    Max over $\Omega$ : $(\pi_{ij}^\wedge)_\sim = {\frac{n_{i\bullet} * n_{\bullet j}}{n}}$
 
     Observed LRT Statistic:
 
     > $$
-    > \Lambda = \left( \frac{L(π_{11}^\sim, π_{12}^\sim, π_{21}^\sim,π_{22}^\sim)}{L(π_{11}^‸, π_{12}^‸, π_{21}^‸, π_{22}^‸)} \right) =\frac{\prod_{i=1}^I\prod_{j=1}^J(π_{i•}^\simπ_{•j}^\sim)^{n_{ij}}}{\prod_{i=1}^I\prod_{j=1}^J(π_{ij}^‸)^{n_{ij}}}
+    > \Lambda = \left( \frac{L(\pi_{11}^\sim, \pi_{12}^\sim, \pi_{21}^\sim,\pi_{22}^\sim)}{L(\pi_{11}^\wedge, \pi_{12}^\wedge, \pi_{21}^\wedge, \pi_{22}^\wedge)} \right) =\frac{\prod_{i=1}^I\prod_{j=1}^J(\pi_{i\bullet}^\sim\pi_{\bullet j}^\sim)^{n_{ij}}}{\prod_{i=1}^I\prod_{j=1}^J(\pi_{ij}^\wedge)^{n_{ij}}}
     > $$
     >
     > $$
-    > \Rightarrow \prod_{i=1}^I\prod_{j=1}^J \left(\frac{(π_{i•}^\simπ_{•j}^\sim)}{π_{ij}^‸}\right)^{n_{ij}}
+    > \Rightarrow \prod_{i=1}^I\prod_{j=1}^J \left(\frac{(\pi_{i\bullet}^\sim\pi_{\bullet j}^\sim)}{\pi_{ij}^\wedge}\right)^{n_{ij}}
     > $$
 
     By our large-sample theory
@@ -140,16 +141,16 @@ Based on the McNemar's output, the p-value is low, so we reject the null in favo
     Rewriting our test statistic and substituting in known values, we get
 
     > $$
-    > -2ln(\Lambda) = -2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{(π_{i•}^\simπ_{•j}^\sim)}{π_{ij}^‸}\right)
-    > \Rightarrow 2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{(π_{i•}^\simπ_{•j}^\sim)}{π_{ij}^‸}\right)
+    > -2ln(\Lambda) = -2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{(\pi_{i\bullet}^\sim\pi_{\bullet j}^\sim)}{\pi_{ij}^\wedge}\right)
+    > \Rightarrow 2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{(\pi_{i\bullet}^\sim\pi_{\bullet j}^\sim)}{\pi_{ij}^\wedge}\right)
     > $$
     >
     > $$
-    > \Rightarrow 2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{\frac{n_{ij}}{n}} {\frac{n_{i•} * n_{•j}}{n}}\right) 
+    > \Rightarrow 2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{\frac{n_{ij}}{n}} {\frac{n_{i\bullet} * n_{\bullet j}}{n}}\right) 
     > \Rightarrow  2 \sum_{i=1}^I \sum_{j=1}^J n_{i,j} ln \left( \frac{n_{ij}} {\frac{n_{ij}}{n}}\right)
     > $$
 
-    We know $n_{i,j}$ is the observed counts and from the derivation above ${\frac{n_{ij}}{n}}$ is the expected counts under $H_0$. So $n_{i,j} = Obs_{i,j}$ and ${\frac{n_{ij}}{n}} = Exp_{i,j}$. Now substituting these into our test statistic we get:
+    We know $n_{i,j}$ is the observed counts and from the derivation above ${\frac{n_{ij}}{n}}$ is the expected counts under $H_0$. So $n_{i,j} = Obs_{ij}$ and ${\frac{n_{ij}}{n}} = Exp_{ij}$. Now substituting these into our test statistic we get:
 
     > $$
     > -2ln(\Lambda) = 2\sum_{i=1}^2 \sum_{j=1}^2 Obs_{ij} ln \left( \frac{Obs_{ij}} {Exp_{ij}} \right)
@@ -157,9 +158,9 @@ Based on the McNemar's output, the p-value is low, so we reject the null in favo
 
     To determine degrees of freedom ($m-k-1$), we need to determine the dimensions of $\omega_0$ and $\Omega$.
 
-    > For $H_0$ : dim $\omega_0$ = { $(π_{11}, π_{12}, π_{21}, π_{22}): π_{12} = π_{21})$} = 2 = k
+    > For $H_0$ : dim $\omega_0$ = { $(\pi_{11}, \pi_{12}, \pi_{21}, \pi_{22}): \pi_{12} = \pi_{21})$} = 2 = k
     >
-    > For $H_A$ : dim $\Omega$ = { $(π_{11}, π_{12}, π_{21}, π_{22}):$ free other than the sum to 1 constraint} = 4 = m
+    > For $H_A$ : dim $\Omega$ = { $(\pi_{11}, \pi_{12}, \pi_{21}, \pi_{22}):$ free other than the sum to 1 constraint} = 4 = m
     >
     > $df = 4-2-1 = 1$
 
@@ -169,15 +170,51 @@ Based on the McNemar's output, the p-value is low, so we reject the null in favo
 
 4.  Lastly, we know we can use Pearson’s chi-square test statistic instead of this LRT and they are asymptotically equivalent. In our above data example, we used
 
-Show that Pearson’s chi-square test statistic can be simplified into the form on the right.
+    $$
+    \chi2= 2\sum_{i=1}^2 \sum_{j=1}^2 \frac{(Obs_{ij}-Exp_{ij})^2} {Exp_{ij}} 
+    = \frac{(n_{12}-n_{21})^2}{n_{12}+n_{21}}
+    $$
 
-<div>
+    Show that Pearson’s chi-square test statistic can be simplified into the form on the right.
 
-</div>
+    <div>
+
+    From above we know, $n_{i,j} = Obs_{ij}$ and ${\frac{n_{ij}}{n}} = Exp_{ij}$. Under $H_0$, with the assumption that $\pi_{12}= \pi_{21}$, we can combine the terms and have $\pi_{12}= \pi_{21} = \frac{n_{12}+n_{21}}{2n}$. Since we are dealing with discordant pairs, we know $n_{11} = n_{22} = 0$.
+
+    So substituting these values into Pearson's chi-square test statistic we get:
+
+    > $$2\sum_{i=1}^2 \sum_{j=1}^2 \frac{(Obs_{ij}-Exp_{ij})^2} {Exp_{ij}} = 
+    > 2 \left[ 
+    >  \frac{(n_{12} - (n_{12} + n_{21})/2)^2}{(n_{12} + n_{21})/4} +
+    >  \frac{(n_{21} - (n_{12} + n_{21})/2)^2}{(n_{12} + n_{21})/4}
+    > \right]
+    > $$
+    >
+    > $$
+    > = \left[ 
+    >  \frac{((n_{12} - (n_{12} + n_{21})/2))^2}{(n_{12} + n_{21})/2} +
+    >  \frac{((n_{21} - (n_{12} + n_{21})/2))^2}{(n_{12} + n_{21})/2}
+    > \right] = \frac{(\frac{n_{12}-n_{21}}{2})^2 + (\frac{n_{21}-n_{21}}{2})^2}{(n_{12} + n_{21})/2}
+    > $$
+    >
+    > $$
+    > = \frac{  (\frac{n_{12}^2}{4} - \frac{n_{12}n_{21}}{2} + \frac{n_{21}^2}{4}) +
+    >  (\frac{n_{12}^2}{4} - \frac{n_{12}n_{21}}{2} + \frac{n_{21}^2}{4}) }{(n_{12} + n_{21})/2}
+    > = \frac{ (\frac{n_{12}^2}{2} - n_{12}n_{21} + \frac{n_{21}^2}{2})} {(n_{12} + n_{21})/2}
+    > $$
+    >
+    > $$
+    > = \frac{ (n_{12}^2 - 2n_{12}n_{21} + n_{21}^2)}{n_{12} + n_{21}} 
+    > = \frac{(n_{12}-n_{21})^2}{n_{12}+n_{21}}
+    > $$
+
+    Thus we have shown we can simplify the test statistic to the requested form.
+
+    </div>
 
 ## Simulation Study
 
-Using simulation based methods is an easier way to find approximate results for the power of a test. We’ll investigate the α of the Pearson chi-square test and its power
+Using simulation based methods is an easier way to find approximate results for the power of a test. We’ll investigate the $\alpha$ of the Pearson chi-square test and its power.
 
 ### *McNemar's Function*
 
@@ -185,7 +222,7 @@ Create a function to conduct McNemar's test and return True if there is enough e
 
 > > Kept getting this error *'Correlations are beyond their upper limits imposed by expectations*', so I added a condition to check the correlation and adjust it if it is higher than the maximum allowed correlation.
 
-```{r, warning = FALSE, message = FALSE}
+```{r mcnemar, message=FALSE, warning=FALSE}
 library(MultiRNG)
 mcnemar_func <- function(n, p, pi1, pi2){
   
@@ -229,16 +266,20 @@ mcnemar_func <- function(n, p, pi1, pi2){
 
 -   We’ll generate data under all combinations of the following:
 
-```{r}
-n_val <- c(25, 40, 80, 200) #sample size
-pi1_val <- c(0.1, 0.4, 0.8) #‘drug A’ variable’s success probability
-pi2_val <- c(pi1_val, pi1_val + 0.02, pi1_val + 0.05, pi1_val + 0.1) #‘drug B’ variable’s success probability
-p_val <- c(0, 0.2, 0.5) #this is the correlation with which we generate our data
+```{r data vals}
+#sample size
+n_val <- c(25, 40, 80, 200) 
+#‘drug A’ variable’s success probability
+pi1_val <- c(0.1, 0.4, 0.8) 
+#‘drug B’ variable’s success probability
+pi2_val <- c(pi1_val, pi1_val + 0.02, pi1_val + 0.05, pi1_val + 0.1) 
+#this is the correlation with which we generate our data
+p_val <- c(0, 0.2, 0.5) 
 ```
 
 -   Create a function to generate the data for all combinations of the parameters
 
-```{r}
+```{r get data}
 get_data <- function(n_val, p_val, pi1_val, pi2_val, N = 100) { 
   #set the seed for the random num generation with replicate
   set.seed(25)
@@ -253,7 +294,8 @@ get_data <- function(n_val, p_val, pi1_val, pi2_val, N = 100) {
           #create column names for each combination
           col_name <- paste0("n", n, "_corr", p, "_pi1", pi1, "_pi2", pi2)  
           #replicate the test and store data in the list
-          gen_data[[col_name]] <- replicate(N, {mcnemar_func(n = n, p = p, pi1 = pi1, pi2 = pi2)})
+          gen_data[[col_name]] <- replicate(N, 
+                                            {mcnemar_func(n = n, p = p, pi1 = pi1, pi2 = pi2)})
         }
       }
     }
@@ -264,17 +306,18 @@ get_data <- function(n_val, p_val, pi1_val, pi2_val, N = 100) {
 
 ### *Replicate the data*
 
-We’ll generate N = 1000 datasets under each of these settings. We’ll be able to determine α control by looking at the case when $π_1 = π_2$. All of the other cases will allow us to investigate power under the alternative created by the difference in π’s and correlation.
+We’ll generate N = 1000 datasets under each of these settings. We’ll be able to determine $\alpha$ control by looking at the case when $\pi_1 = \pi_2$. All of the other cases will allow us to investigate power under the alternative created by the difference in $\pi$’s and correlation.
 
-```{r}
-samples <- get_data(n_val = n_val, p_val = p_val, pi1_val = pi1_val, pi2_val = pi2_val, N = 1000)
+```{r run functions}
+samples <- get_data(n_val = n_val, p_val = p_val, 
+                    pi1_val = pi1_val, pi2_val = pi2_val, N = 1000)
 ```
 
 ### *Find Power*
 
 Find the probability of rejecting $H_0$ for each simulated combination.
 
-```{r}
+```{r power}
 #apply the mean to each list to get the power
 power <- lapply(X = samples, FUN = mean)
 
@@ -287,7 +330,8 @@ power_df <- data.frame(
 #split the combination column into a vector with 4 values for each parameter
 split_combos <- strsplit(x = as.character(power_df$Combination), split = "_")
 
-#extract each parameter value and assign it to a new column & remove characters from the values
+#extract each parameter value and assign it to a new column 
+#& remove characters from the values
 power_df$n <- sapply(split_combos, function(x) x[1])
 power_df$n <- sub("n", "", power_df$n)
 
@@ -300,7 +344,8 @@ power_df$pi1 <- sub("pi1", "", power_df$pi1)
 power_df$pi2 <- sapply(split_combos, function(x) x[4])
 power_df$pi2 <- sub("pi2", "", power_df$pi2)
 
-#remove row names for a cleaner table since values are already available in Combination column
+#remove row names for a cleaner table since values are 
+#already available in Combination column
 row.names(power_df) <- NULL
 
 #set data structure of columns
@@ -308,7 +353,6 @@ power_df$pi1 <- as.numeric(power_df$pi1)
 power_df$pi2 <- as.numeric(power_df$pi2)
 power_df$Correlation <- as.factor(power_df$Correlation) 
 power_df$n <- as.numeric(power_df$n)
-power_df <- as_tibble(power_df)
 
 #create a new column pi2-pi1 to use when creating plots
 power_df$pi2_pi1 <- (power_df$pi2 - power_df$pi1)
@@ -318,21 +362,24 @@ power_df$pi2_pi1 <- (power_df$pi2 - power_df$pi1)
 
 Read in packages to create better visualizations than with base R.
 
-```{r, warning = FALSE, message = FALS}
+```{r packages, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(tidyr)
 library(dplyr)
 ```
 
-Create Power Plots for each instance of $π_1$ to determine how well the asymptotic rejection region performs at controlling α and the power of the asymptotic test when comparing certain alternatives.
+Create Power Plots for each instance of $\pi_1$ to determine how well the asymptotic rejection region performs at controlling $\alpha$ and the power of the asymptotic test when comparing certain alternatives.
 
-```{r}
+```{r plots}
+power_df <- as_tibble(power_df)
+
 #pi=0.1
 power_df|>
   filter(power_df$pi1 == 0.1) |>
   ggplot(aes(x = pi2_pi1, y = Power, group = Correlation, color = Correlation)) +
   geom_line() + 
-  labs(title = "Power plot for different sample sizes with pi1 = 0.1", x = "pi2-pi1", y = "Proportion Rejected") +
+  labs(title = "Power plot for different sample sizes with pi1 = 0.1", 
+       x = "pi2-pi1", y = "Proportion Rejected") +
   facet_grid(cols = vars(n)) +
   theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
 
@@ -341,7 +388,8 @@ power_df|>
   filter(power_df$pi1 == 0.4) |>
   ggplot(aes(x = pi2_pi1, y = Power, group = Correlation, color = Correlation)) +
   geom_line() + 
-  labs(title = "Power plot for different sample sizes with pi1 = 0.4", x = "pi2-pi1", y = "Proportion Rejected") +
+  labs(title = "Power plot for different sample sizes with pi1 = 0.4", 
+       x = "pi2-pi1", y = "Proportion Rejected") +
   facet_grid(cols = vars(n)) +
   theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
 
@@ -350,11 +398,12 @@ power_df|>
   filter(power_df$pi1 == 0.8) |>
   ggplot(aes(x = pi2_pi1, y = Power, group = Correlation, color = Correlation)) +
   geom_line() + 
-  labs(title = "Power plot for different sample sizes with pi1 = 0.8", x = "pi2-pi1", y = "Proportion Rejected") +
+  labs(title = "Power plot for different sample sizes with pi1 = 0.8", 
+       x = "pi2-pi1", y = "Proportion Rejected") +
   facet_grid(cols = vars(n)) +
   theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
 ```
 
 ### *Results*
 
-In all values of $π_1$ where $π_1 = π_2$, the proportion of tests rejecting $H_0$ was the closest to 0. As the $|π_2 - π_1|$ increases, the proportion of tests rejected also increases. The various correlation values acted very similarly, and as the sample sizes increases, the proportion of tests rejected reached high values sooner.
+In all values of $\pi_1$ where $\pi_1 = \pi_2$, the proportion of tests rejecting $H_0$ was the closest to 0. As the $|\pi_2 - \pi_1|$ increases, the proportion of tests rejected also increases. The various correlation values acted very similarly, and as the sample sizes increases, the proportion of tests rejected reached high values sooner.
